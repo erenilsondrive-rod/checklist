@@ -57,11 +57,14 @@
             <h1 class="h3 mb-1"><i class="bi bi-check2-square text-primary me-2"></i>Meu Checklist Dinâmico</h1>
             <p class="text-muted small mb-0">Organize tarefas por prazos e categorias com htmx</p>
         </div>
-        <div>
-            <button class="btn btn-outline-secondary btn-sm me-1" onclick="exportData()" title="Exportar Backup">
+        <div class="d-flex gap-1">
+            <button class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#githubModal" title="Configurar e Sync GitHub">
+                <i class="bi bi-github"></i> GitHub API
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="exportData()" title="Exportar Backup Local">
                 <i class="bi bi-download"></i> Exportar
             </button>
-            <label class="btn btn-outline-secondary btn-sm mb-0" title="Importar Backup">
+            <label class="btn btn-outline-secondary btn-sm mb-0" title="Importar Backup Local">
                 <i class="bi bi-upload"></i> Importar
                 <input type="file" id="importFile" onchange="importData(event)" hidden accept=".json">
             </label>
@@ -179,6 +182,48 @@
     </div>
 </div>
 
+<!-- Modal de Integração com API do GitHub -->
+<div class="modal fade" id="githubModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title h6"><i class="bi bi-github me-2"></i>Sincronização API GitHub</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="githubForm" onsubmit="saveGithubConfig(event)">
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Usuário GitHub</label>
+                        <input type="text" id="ghUser" class="form-control form-control-sm" placeholder="ex: seu-usuario" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Nome do Repositório</label>
+                        <input type="text" id="ghRepo" class="form-control form-control-sm" placeholder="ex: meuchk-dados" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Caminho do Arquivo (.json)</label>
+                        <input type="text" id="ghPath" class="form-control form-control-sm" placeholder="ex: checklist.json" value="checklist.json" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small mb-1">Personal Access Token (PAT)</label>
+                        <input type="password" id="ghToken" class="form-control form-control-sm" placeholder="ghp_xxxxxxxxxxxx" required>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-sm w-100 mb-3">Salvar Configurações</button>
+                </form>
+                <hr>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary btn-sm flex-fill" onclick="pushToGithub()">
+                        <i class="bi bi-cloud-upload me-1"></i>Enviar (Push)
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm flex-fill" onclick="fetchFromGithub()">
+                        <i class="bi bi-cloud-download me-1"></i>Baixar (Fetch)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Bootstrap 5 JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -192,9 +237,17 @@
         customDate: ""
     };
 
+    let githubConfig = {
+        username: "",
+        repo: "",
+        filePath: "checklist.json",
+        token: ""
+    };
+
     // --- INICIALIZAÇÃO E INTEGRAÇÃO HTMX ---
     document.addEventListener("DOMContentLoaded", () => {
         loadLocalStorage();
+        loadGithubConfig();
         renderCategories();
         
         // Listener htmx para atualizar reativamente a lista quando o evento customizado dispara
@@ -222,6 +275,137 @@
             } catch (e) {
                 console.error("Erro ao carregar dados:", e);
             }
+        }
+    }
+
+    // --- CONFIGURAÇÃO DA API GITHUB ---
+    function loadGithubConfig() {
+        const saved = localStorage.getItem("github_config");
+        if (saved) {
+            try {
+                githubConfig = JSON.parse(saved);
+                document.getElementById("ghUser").value = githubConfig.username || "";
+                document.getElementById("ghRepo").value = githubConfig.repo || "";
+                document.getElementById("ghPath").value = githubConfig.filePath || "checklist.json";
+                document.getElementById("ghToken").value = githubConfig.token || "";
+            } catch(e) {
+                console.error("Erro ao carregar configs do GitHub", e);
+            }
+        }
+    }
+
+    function saveGithubConfig(e) {
+        if(e) e.preventDefault();
+        githubConfig.username = document.getElementById("ghUser").value.trim();
+        githubConfig.repo = document.getElementById("ghRepo").value.trim();
+        githubConfig.filePath = document.getElementById("ghPath").value.trim();
+        githubConfig.token = document.getElementById("ghToken").value.trim();
+
+        localStorage.setItem("github_config", JSON.stringify(githubConfig));
+        alert("Configurações do GitHub salvas localmente!");
+    }
+
+    // UTILS CONVERSÃO BASE64 (Suporte UTF-8)
+    function utf8ToB64(str) {
+        return window.btoa(unescape(encodeURIComponent(str)));
+    }
+
+    function b64ToUtf8(str) {
+        return decodeURIComponent(escape(window.atob(str)));
+    }
+
+    // --- REQUISITAR / SALVAR DADOS PELA API DO GITHUB ---
+    async function getGithubFileSHA() {
+        const url = `https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${githubConfig.filePath}`;
+        try {
+            const res = await fetch(url, {
+                headers: {
+                    "Authorization": `Bearer ${githubConfig.token}`,
+                    "Accept": "application/vnd.github.v3+json"
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                return { sha: data.sha, content: data.content };
+            }
+        } catch (e) {
+            console.error(e);
+        }
+        return null;
+    }
+
+    async function pushToGithub() {
+        if (!githubConfig.token || !githubConfig.username || !githubConfig.repo) {
+            alert("Por favor, preencha as configurações do GitHub e salve primeiro.");
+            return;
+        }
+
+        const fileData = await getGithubFileSHA();
+        const sha = fileData ? fileData.sha : null;
+
+        const contentJson = JSON.stringify({
+            items: state.items,
+            categories: state.categories
+        }, null, 2);
+
+        const bodyData = {
+            message: `Atualização de checklist via API [${new Date().toLocaleString()}]`,
+            content: utf8ToB64(contentJson)
+        };
+
+        if (sha) {
+            bodyData.sha = sha;
+        }
+
+        const url = `https://api.github.com/repos/${githubConfig.username}/${githubConfig.repo}/contents/${githubConfig.filePath}`;
+
+        try {
+            const res = await fetch(url, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `Bearer ${githubConfig.token}`,
+                    "Content-Type": "application/json",
+                    "Accept": "application/vnd.github.v3+json"
+                },
+                body: JSON.stringify(bodyData)
+            });
+
+            if (res.ok) {
+                alert("Dados enviados e salvos com sucesso no GitHub!");
+            } else {
+                const err = await res.json();
+                alert(`Erro ao salvar no GitHub: ${err.message}`);
+            }
+        } catch (e) {
+            alert(`Erro na requisição: ${e.message}`);
+        }
+    }
+
+    async function fetchFromGithub() {
+        if (!githubConfig.token || !githubConfig.username || !githubConfig.repo) {
+            alert("Por favor, preencha as configurações do GitHub e salve primeiro.");
+            return;
+        }
+
+        const fileData = await getGithubFileSHA();
+        if (fileData && fileData.content) {
+            try {
+                const decodedJson = b64ToUtf8(fileData.content.replace(/\n/g, ''));
+                const importedState = JSON.parse(decodedJson);
+                if (importedState.items && importedState.categories) {
+                    state.items = importedState.items;
+                    state.categories = importedState.categories;
+                    saveLocalStorage();
+                    renderCategories();
+                    alert("Dados baixados do GitHub com sucesso!");
+                } else {
+                    alert("Formato dos dados recebidos do GitHub é inválido.");
+                }
+            } catch (e) {
+                alert("Erro ao processar o conteúdo do arquivo vindo do GitHub.");
+            }
+        } else {
+            alert("Não foi possível carregar o arquivo do GitHub. Verifique o caminho e as credenciais.");
         }
     }
 
