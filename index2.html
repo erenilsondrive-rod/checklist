@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist Personalizável Dinâmico</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .main-card {
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+        }
+        .item-row {
+            transition: all 0.2s ease;
+            border-left: 4px solid #0d6efd;
+        }
+        .item-row.completed {
+            border-left-color: #198754;
+            background-color: #f8fdfa;
+        }
+        .item-row.completed .item-text {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+        .item-row.overdue {
+            border-left-color: #dc3545;
+        }
+        .progress {
+            height: 10px;
+            border-radius: 6px;
+        }
+        .cursor-pointer {
+            cursor: pointer;
+        }
+        .badge-date {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="py-4">
+
+<div class="container" style="max-width: 850px;">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1"><i class="bi bi-check2-square text-primary me-2"></i>Meu Checklist Dinâmico</h1>
+            <p class="text-muted small mb-0">Organize tarefas por prazos e categorias com htmx</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary btn-sm me-1" onclick="exportData()" title="Exportar Backup">
+                <i class="bi bi-download"></i> Exportar
+            </button>
+            <label class="btn btn-outline-secondary btn-sm mb-0" title="Importar Backup">
+                <i class="bi bi-upload"></i> Importar
+                <input type="file" id="importFile" onchange="importData(event)" hidden accept=".json">
+            </label>
+        </div>
+    </div>
+
+    <!-- Card Principal -->
+    <div class="card main-card mb-4">
+        <div class="card-body p-4">
+            
+            <!-- Barra de Progresso Geral -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-semibold small">Progresso Geral</span>
+                    <span id="progressText" class="fw-semibold small text-primary">0%</span>
+                </div>
+                <div class="progress">
+                    <div id="progressBar" class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Formulário de Novo Item com Controle de Data -->
+            <form id="itemForm" class="row g-2 mb-4" onsubmit="addItem(event)">
+                <div class="col-md-4">
+                    <input type="text" id="itemTitle" class="form-control" placeholder="O que precisa fazer?" required>
+                </div>
+                <div class="col-md-3">
+                    <select id="itemCategory" class="form-select">
+                        <!-- Categorias inseridas via JS -->
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" id="itemDueDate" class="form-control" title="Data de vencimento">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-lg me-1"></i>Add
+                    </button>
+                </div>
+            </form>
+
+            <!-- Painel de Filtros e Categorias -->
+            <div class="row g-2 mb-3 pb-3 border-bottom align-items-center">
+                <!-- Filtros por Estado -->
+                <div class="col-12 col-md-auto">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="filter-all" onclick="setFilter('status', 'all')">Todos</button>
+                        <button type="button" class="btn btn-outline-primary" id="filter-pending" onclick="setFilter('status', 'pending')">Pendentes</button>
+                        <button type="button" class="btn btn-outline-primary" id="filter-completed" onclick="setFilter('status', 'completed')">Concluídos</button>
+                    </div>
+                </div>
+
+                <!-- Filtros por Data -->
+                <div class="col-12 col-md-auto">
+                    <select id="dateFilter" class="form-select form-select-sm" onchange="setFilter('date', this.value)">
+                        <option value="all">Todas as Datas</option>
+                        <option value="today">Vencem Hoje</option>
+                        <option value="week">Próximos 7 Dias</option>
+                        <option value="overdue">Atrasados</option>
+                        <option value="custom">Data Específica...</option>
+                    </select>
+                </div>
+
+                <!-- Picker de Data Específica (Oculto por padrão) -->
+                <div class="col-12 col-md-auto d-none" id="customDateContainer">
+                    <input type="date" id="customDateFilter" class="form-control form-control-sm" onchange="setFilter('customDate', this.value)">
+                </div>
+
+                <!-- Botão Gerenciar Categorias -->
+                <div class="col-12 col-md-auto ms-md-auto text-end">
+                    <button class="btn btn-link btn-sm text-decoration-none p-0" data-bs-toggle="modal" data-bs-target="#categoryModal">
+                        <i class="bi bi-gear me-1"></i>Categorias
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Itens (Gerenciada via htmx events) -->
+            <div id="checklistContainer" 
+                 class="d-flex flex-column gap-2"
+                 hx-get="#" 
+                 hx-trigger="updateList from:body" 
+                 hx-target="#checklistContainer" 
+                 hx-swap="none">
+                <!-- Itens injetados dinamicamente -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-5 d-none">
+                <i class="bi bi-inbox text-muted display-4"></i>
+                <p class="text-muted mt-2">Nenhum item encontrado nesta visualização.</p>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Gerenciamento de Categorias -->
+<div class="modal fade" id="categoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title h6"><i class="bi bi-tags me-2"></i>Gerenciar Categorias</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="categoryForm" class="d-flex gap-2 mb-3" onsubmit="addCategory(event)">
+                    <input type="text" id="newCatName" class="form-control form-control-sm" placeholder="Nova categoria..." required>
+                    <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-plus"></i></button>
+                </form>
+                <ul id="categoryList" class="list-group list-group-flush border-top">
+                    <!-- Categorias injetadas via JS -->
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // --- ESTADO DA APLICAÇÃO ---
+    let state = {
+        items: [],
+        categories: ["Geral", "Trabalho", "Pessoal", "Compras"],
+        currentFilter: "all",
+        currentDateFilter: "all",
+        customDate: ""
+    };
+
+    // --- INICIALIZAÇÃO E INTEGRAÇÃO HTMX ---
+    document.addEventListener("DOMContentLoaded", () => {
+        loadLocalStorage();
+        renderCategories();
+        
+        // Listener htmx para atualizar reativamente a lista quando o evento customizado dispara
+        document.body.addEventListener('updateList', () => {
+            renderItems();
+        });
+
+        // Dispara evento HTMX inicial
+        htmx.trigger("body", "updateList");
+    });
+
+    // --- PERSISTÊNCIA LOCALSTORAGE ---
+    function saveLocalStorage() {
+        localStorage.setItem("checklist_data", JSON.stringify(state));
+        htmx.trigger("body", "updateList");
+    }
+
+    function loadLocalStorage() {
+        const saved = localStorage.getItem("checklist_data");
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                state.items = parsed.items || [];
+                state.categories = parsed.categories || ["Geral", "Trabalho", "Pessoal", "Compras"];
+            } catch (e) {
+                console.error("Erro ao carregar dados:", e);
+            }
+        }
+    }
+
+    // --- GERENCIAMENTO DE ITENS ---
+    function addItem(e) {
+        e.preventDefault();
+        const titleInput = document.getElementById("itemTitle");
+        const categorySelect = document.getElementById("itemCategory");
+        const dueDateInput = document.getElementById("itemDueDate");
+
+        const newItem = {
+            id: Date.now().toString(),
+            title: titleInput.value.trim(),
+            category: categorySelect.value,
+            dueDate: dueDateInput.value || null,
+            completed: false
+        };
+
+        state.items.unshift(newItem);
+        saveLocalStorage();
+
+        titleInput.value = "";
+        dueDateInput.value = "";
+        titleInput.focus();
+    }
+
+    function toggleItem(id) {
+        state.items = state.items.map(item => {
+            if (item.id === id) return { ...item, completed: !item.completed };
+            return item;
+        });
+        saveLocalStorage();
+    }
+
+    function deleteItem(id) {
+        state.items = state.items.filter(item => item.id !== id);
+        saveLocalStorage();
+    }
+
+    function editItem(id) {
+        const item = state.items.find(i => i.id === id);
+        if (!item) return;
+
+        const newTitle = prompt("Editar nome do item:", item.title);
+        if (newTitle !== null && newTitle.trim() !== "") {
+            item.title = newTitle.trim();
+            saveLocalStorage();
+        }
+    }
+
+    // --- GERENCIAMENTO DE CATEGORIAS ---
+    function renderCategories() {
+        const select = document.getElementById("itemCategory");
+        const catList = document.getElementById("categoryList");
+
+        select.innerHTML = "";
+        catList.innerHTML = "";
+
+        state.categories.forEach(cat => {
+            const option = document.createElement("option");
+            option.value = cat;
+            option.textContent = cat;
+            select.appendChild(option);
+
+            const li = document.createElement("li");
+            li.className = "list-group-item d-flex justify-content-between align-items-center px-0 py-2";
+            li.innerHTML = `
+                <span>${escapeHtml(cat)}</span>
+                ${state.categories.length > 1 ? `
+                    <button class="btn btn-outline-danger btn-sm border-0" onclick="deleteCategory('${escapeHtml(cat)}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                ` : ''}
+            `;
+            catList.appendChild(li);
+        });
+    }
+
+    function addCategory(e) {
+        e.preventDefault();
+        const input = document.getElementById("newCatName");
+        const name = input.value.trim();
+
+        if (name && !state.categories.includes(name)) {
+            state.categories.push(name);
+            saveLocalStorage();
+            renderCategories();
+            input.value = "";
+        }
+    }
+
+    function deleteCategory(catName) {
+        if (state.categories.length <= 1) return;
+        
+        state.categories = state.categories.filter(c => c !== catName);
+        state.items = state.items.map(item => {
+            if (item.category === catName) item.category = state.categories[0];
+            return item;
+        });
+
+        saveLocalStorage();
+        renderCategories();
+    }
+
+    // --- FILTROS E RENDERIZAÇÃO DINÂMICA ---
+    function setFilter(type, value) {
+        if (type === 'status') {
+            state.currentFilter = value;
+            ['all', 'pending', 'completed'].forEach(f => {
+                const btn = document.getElementById(`filter-${f}`);
+                if (f === value) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+        } else if (type === 'date') {
+            state.currentDateFilter = value;
+            const customContainer = document.getElementById('customDateContainer');
+            if (value === 'custom') {
+                customContainer.classList.remove('d-none');
+            } else {
+                customContainer.classList.add('d-none');
+            }
+        } else if (type === 'customDate') {
+            state.customDate = value;
+        }
+
+        htmx.trigger("body", "updateList");
+    }
+
+    function renderItems() {
+        const container = document.getElementById("checklistContainer");
+        const emptyState = document.getElementById("emptyState");
+        container.innerHTML = "";
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        const nextWeekStr = nextWeek.toISOString().split('T')[0];
+
+        // Processo de Filtragem
+        const filteredItems = state.items.filter(item => {
+            // Filtro por Estado
+            if (state.currentFilter === "pending" && item.completed) return false;
+            if (state.currentFilter === "completed" && !item.completed) return false;
+
+            // Filtro por Data
+            if (state.currentDateFilter === "today") {
+                return item.dueDate === todayStr;
+            } else if (state.currentDateFilter === "week") {
+                return item.dueDate && item.dueDate >= todayStr && item.dueDate <= nextWeekStr;
+            } else if (state.currentDateFilter === "overdue") {
+                return item.dueDate && item.dueDate < todayStr && !item.completed;
+            } else if (state.currentDateFilter === "custom" && state.customDate) {
+                return item.dueDate === state.customDate;
+            }
+
+            return true;
+        });
+
+        updateProgress();
+
+        if (filteredItems.length === 0) {
+            emptyState.classList.remove("d-none");
+            return;
+        } else {
+            emptyState.classList.add("d-none");
+        }
+
+        // Construção da lista
+        filteredItems.forEach(item => {
+            const isOverdue = item.dueDate && item.dueDate < todayStr && !item.completed;
+            const itemEl = document.createElement("div");
+            itemEl.className = `item-row p-3 bg-white rounded border d-flex align-items-center justify-content-between ${item.completed ? 'completed' : ''} ${isOverdue ? 'overdue' : ''}`;
+            
+            // Tratamento da exibição da data
+            let dateBadge = '';
+            if (item.dueDate) {
+                const [year, month, day] = item.dueDate.split('-');
+                const formattedDate = `${day}/${month}/${year}`;
+                
+                let badgeClass = "bg-light text-dark border";
+                if (item.completed) {
+                    badgeClass = "bg-light text-muted border";
+                } else if (isOverdue) {
+                    badgeClass = "bg-danger-subtle text-danger border border-danger-subtle";
+                } else if (item.dueDate === todayStr) {
+                    badgeClass = "bg-warning-subtle text-warning-emphasis border border-warning-subtle";
+                }
+
+                dateBadge = `<span class="badge badge-date ${badgeClass} ms-2"><i class="bi bi-calendar3 me-1"></i>${formattedDate}</span>`;
+            }
+
+            itemEl.innerHTML = `
+                <div class="d-flex align-items-center me-2 overflow-hidden">
+                    <input class="form-check-input me-3 flex-shrink-0 cursor-pointer" type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem('${item.id}')">
+                    <div class="text-truncate">
+                        <span class="item-text fw-medium cursor-pointer" onclick="toggleItem('${item.id}')">${escapeHtml(item.title)}</span>
+                        <span class="badge bg-secondary-subtle text-secondary border ms-2 rounded-pill small fw-normal">${escapeHtml(item.category)}</span>
+                        ${dateBadge}
+                    </div>
+                </div>
+                <div class="d-flex gap-1 flex-shrink-0">
+                    <button class="btn btn-sm btn-light text-secondary" onclick="editItem('${item.id}')" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-light text-danger" onclick="deleteItem('${item.id}')" title="Excluir">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(itemEl);
+        });
+    }
+
+    function updateProgress() {
+        const total = state.items.length;
+        const completed = state.items.filter(i => i.completed).length;
+        const percentage = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+        document.getElementById("progressBar").style.width = `${percentage}%`;
+        document.getElementById("progressText").textContent = `${percentage}% (${completed}/${total})`;
+    }
+
+    // --- REGRAS DE BACKUP (EXPORTAR/IMPORTAR) ---
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", `checklist_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
+
+    function importData(event) {
+        const fileReader = new FileReader();
+        fileReader.onload = function(e) {
+            try {
+                const importedState = JSON.parse(e.target.result);
+                if (importedState.items && importedState.categories) {
+                    state = importedState;
+                    saveLocalStorage();
+                    renderCategories();
+                    alert("Dados importados com sucesso!");
+                } else {
+                    alert("Arquivo de backup inválido.");
+                }
+            } catch (err) {
+                alert("Erro ao ler o arquivo selecionado.");
+            }
+        };
+        fileReader.readAsText(event.target.files[0]);
+    }
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+</script>
+
+</body>
+</html>
