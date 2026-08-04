@@ -1,9 +1,70 @@
 {
-  "items": [],
+  "items": [
+    {
+      "id": "1785874230174",
+      "title": "VISTORIA 14H00 BARBALHO",
+      "category": "ERENILSON",
+      "dueDate": "2026-08-05",
+      "completed": false
+    },
+    {
+      "id": "1785872138048",
+      "title": "RESPOSTA PROCURADORIA",
+      "category": "ERENILSON",
+      "dueDate": "2026-08-05",
+      "completed": false
+    },
+    {
+      "id": "1785855002987",
+      "title": "LAGOA DA BOA IDEIA",
+      "category": "AVELINO",
+      "dueDate": "2026-08-04",
+      "completed": false
+    },
+    {
+      "id": "1785853553140",
+      "title": "LAVAGEM CARRO VARZEA",
+      "category": "ERENILSON",
+      "dueDate": "2026-08-04",
+      "completed": false
+    },
+    {
+      "id": "1785853486332",
+      "title": "VERIFICAR MULTA COM JARDEL, GRANJA AFOGADOS",
+      "category": "JARDEL",
+      "dueDate": "2026-08-05",
+      "completed": false
+    },
+    {
+      "id": "1785850705796",
+      "title": "AGENDAR REUNIÃO COMPAZ",
+      "category": "AVELINO",
+      "dueDate": "2026-08-04",
+      "completed": false
+    },
+    {
+      "id": "1785850690997",
+      "title": "VERIFICAR AUSENCIAS DO CAMINHAO DE PODA",
+      "category": "AVELINO",
+      "dueDate": "2026-08-04",
+      "completed": true
+    },
+    {
+      "id": "1785850639341",
+      "title": "ATUALIZAR PLANILHA ROBSON",
+      "category": "AVELINO",
+      "dueDate": "2026-08-04",
+      "completed": true
+    }
+  ],
   "categories": [
-    "Geral",
-    "Trabalho",
-    "Pessoal",
-    "Compras"
+    "AVELINO",
+    "MATHEUS",
+    "JARDEL",
+    "EMPREL",
+    "MAURICIO",
+    "ROBSON",
+    "AMARO",
+    "ERENILSON"
   ]
 }
