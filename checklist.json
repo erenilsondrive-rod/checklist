@@ -1,6 +1,48 @@
 {
   "items": [
     {
+      "id": "1786020406579",
+      "title": "PRESENTE DPR",
+      "category": "AVELINO",
+      "dueDate": "2026-08-07",
+      "completed": false
+    },
+    {
+      "id": "1786017252007",
+      "title": "ATUALIZA CAMPANHA",
+      "category": "ERENILSON",
+      "dueDate": "2026-08-07",
+      "completed": false
+    },
+    {
+      "id": "1786016997883",
+      "title": "KM RODADO AGOSTO",
+      "category": "ERENILSON",
+      "dueDate": "2026-09-01",
+      "completed": false
+    },
+    {
+      "id": "1786016979268",
+      "title": "MAPA DE HORAS EXTRAS AGO",
+      "category": "ERENILSON",
+      "dueDate": "2026-09-01",
+      "completed": false
+    },
+    {
+      "id": "1786016512124",
+      "title": "APRESENTAÇÃO SEGOV",
+      "category": "AVELINO",
+      "dueDate": "2026-08-06",
+      "completed": false
+    },
+    {
+      "id": "1786016483374",
+      "title": "GEV AGOSTO",
+      "category": "AVELINO",
+      "dueDate": "2026-08-06",
+      "completed": false
+    },
+    {
       "id": "1785941975167",
       "title": "USUARIO DE REDE VINICIUS",
       "category": "ERENILSON",
@@ -68,7 +110,7 @@
       "title": "VISTORIA 14H00 BARBALHO",
       "category": "ERENILSON",
       "dueDate": "2026-08-05",
-      "completed": false
+      "completed": true
     },
     {
       "id": "1785872138048",
@@ -82,7 +124,7 @@
       "title": "LAGOA DA BOA IDEIA",
       "category": "AVELINO",
       "dueDate": "2026-08-04",
-      "completed": false
+      "completed": true
     },
     {
       "id": "1785853553140",
