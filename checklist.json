@@ -1,34 +1,6 @@
 {
   "items": [
     {
-      "id": "1786020406579",
-      "title": "PRESENTE DPR",
-      "category": "AVELINO",
-      "dueDate": "2026-08-07",
-      "completed": false
-    },
-    {
-      "id": "1786017252007",
-      "title": "ATUALIZA CAMPANHA",
-      "category": "ERENILSON",
-      "dueDate": "2026-08-07",
-      "completed": false
-    },
-    {
-      "id": "1786016997883",
-      "title": "KM RODADO AGOSTO",
-      "category": "ERENILSON",
-      "dueDate": "2026-09-01",
-      "completed": false
-    },
-    {
-      "id": "1786016979268",
-      "title": "MAPA DE HORAS EXTRAS AGO",
-      "category": "ERENILSON",
-      "dueDate": "2026-09-01",
-      "completed": false
-    },
-    {
       "id": "1786016512124",
       "title": "APRESENTAÇÃO SEGOV",
       "category": "AVELINO",
