@@ -104,7 +104,8 @@
             <!-- Formulário de Novo Item com Controle de Data -->
             <form id="itemForm" class="row g-2 mb-4" onsubmit="addItem(event)">
                 <div class="col-md-4">
-                    <input type="text" id="itemTitle" class="form-control" placeholder="O que precisa fazer?" required>
+                    <input type="text" id="itemTitle" class="form-control" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()" placeholder="O que precisa fazer?" required>
+
                 </div>
                 <div class="col-md-3">
                     <select id="itemCategory" class="form-select">
