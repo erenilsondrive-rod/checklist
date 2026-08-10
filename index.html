@@ -29,8 +29,9 @@
             opacity: 0.5;
         }
         .item-row.drag-over {
-            border-left-color: #0d6efd;
-            background-color: #eef5ff;
+        border: 2px dashed #0d6efd !important;
+        background-color: #e0edff !important;
+        transform: scale(1.01);
         }
         .item-row.completed {
             border-left-color: #198754;
@@ -642,8 +643,10 @@
                 event.dataTransfer.effectAllowed = "move";
                 itemEl.classList.add("dragging");
             });
+            // Código Novo
             itemEl.addEventListener("dragover", (event) => {
                 event.preventDefault();
+                event.dataTransfer.dropEffect = "move"; // Informa ao navegador que é uma operação de mover
                 itemEl.classList.add("drag-over");
             });
             itemEl.addEventListener("dragleave", () => {
