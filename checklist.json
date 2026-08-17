@@ -1,6 +1,13 @@
 {
   "items": [
     {
+      "id": "1786970513652",
+      "title": "VARRIÇÃO PRAÇA CAIO",
+      "category": "AVELINO",
+      "dueDate": "2026-08-18",
+      "completed": false
+    },
+    {
       "id": "1786962511900",
       "title": "PODA HERÁCLITO CAVALCANTE",
       "category": "ERENILSON",
