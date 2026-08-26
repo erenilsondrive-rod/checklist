@@ -1,6 +1,27 @@
 {
   "items": [
     {
+      "id": "1787769976196",
+      "title": "DECLARAÇÃO GARI VOTAÇÃO",
+      "category": "AVELINO",
+      "dueDate": "2026-08-27",
+      "completed": false
+    },
+    {
+      "id": "1787769050015",
+      "title": "AUTORIZAÇÃO CAIXA PÇA CASA FORTE",
+      "category": "ERENILSON",
+      "dueDate": "2026-08-27",
+      "completed": false
+    },
+    {
+      "id": "1787764782620",
+      "title": "CE QUEBRA PODA",
+      "category": "AVELINO",
+      "dueDate": "2026-08-27",
+      "completed": false
+    },
+    {
       "id": "1786970513652",
       "title": "VARRIÇÃO PRAÇA CAIO",
       "category": "AVELINO",
@@ -40,7 +61,7 @@
       "title": "ALIAS RPA 4 MARILIA",
       "category": "EMPREL",
       "dueDate": "2026-08-11",
-      "completed": false
+      "completed": true
     },
     {
       "id": "1786383954107",
